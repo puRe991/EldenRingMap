@@ -39,6 +39,27 @@
     types: [],
   };
 
+  const openAdminModal = () => {
+    clickTime++;
+    // 点五下触发管理员ModeModal
+    if (clickTime === 5) {
+      inputPasswordVisibility = true;
+      clickTime = 0;
+    }
+  };
+
+  const closeAdminMode = () => {
+    // 点一下退出管理员模式
+    isAdminModeStore.set(false);
+  };
+
+  const runOnKeyboardAction = (event: KeyboardEvent, action: () => void) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      action();
+    }
+  };
+
   /** 从服务器获取统计信息 */
   const getStatisticsData = () => {
     axios.get('./statistics.php').then(res => {
@@ -54,19 +75,9 @@
 <div class="container">
   <div class="demiContainer">
     <!--薪火-->
-    <img
-      src="./resource/images/fire.png"
-      alt="fire"
-      height="40%"
-      on:click={() => {
-        clickTime++;
-        // 点五下触发管理员ModeModal
-        if (clickTime === 5) {
-          inputPasswordVisibility = true;
-          clickTime = 0;
-        }
-      }}
-    />
+    <button class="fire-button" type="button" on:click={openAdminModal}>
+      <img src="./resource/images/fire.png" alt="fire" height="40%" />
+    </button>
 
     <!--Elden Ring Online Map-->
     <p id="title" class="svelte-q01t2y">
@@ -74,10 +85,10 @@
       {#if $isAdminModeStore}
         <!--管理员模式显示Admin字样-->
         <span
-          on:click={() => {
-            // 点一下退出管理员模式
-            isAdminModeStore.set(false);
-          }}>(Admin)</span
+          role="button"
+          tabindex="0"
+          on:click={closeAdminMode}
+          on:keydown={event => runOnKeyboardAction(event, closeAdminMode)}>(Admin)</span
         >
       {/if}
     </p>
@@ -371,6 +382,15 @@
   button {
     font-size: 1em;
     padding: 5px 20px;
+  }
+  .fire-button {
+    align-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    padding: 0;
   }
   #modalContainer {
     display: flex;

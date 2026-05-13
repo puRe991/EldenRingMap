@@ -9,7 +9,7 @@
   import { querystring, location } from 'svelte-spa-router';
   import qs from 'qs';
 
-  let params;
+  let params: { from?: string; device?: string } = {};
 
   onMount(() => {
     querystring.subscribe(v => {

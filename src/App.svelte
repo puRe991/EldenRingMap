@@ -11,9 +11,6 @@
   import * as config from './config';
   import UpdateContentModal from './components/UpdateContentModal.svelte';
   import CooperationModal from './components/CooperationModal.svelte';
-  import { lang } from './stores';
-  import { SupportedLang } from './utils/enum';
-  import { layeringCoffmanGraham } from 'd3-dag';
 
   let updateVisibility = false;
   let cooperationModalVisibility = false;

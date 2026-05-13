@@ -1,14 +1,14 @@
 <script lang="ts">
   // leaflet 需要 leaflet.css， 这里通过 rollup-plugin-css-only 将其打包到 bundle.css
   import '../../node_modules/leaflet/dist/leaflet.css';
-  import L, { TileLayer } from 'leaflet';
+  import L from 'leaflet';
   import type { LeafletMouseEvent } from 'leaflet';
   import { afterUpdate, onMount } from 'svelte';
   import Modal from './Modal.svelte';
   import { fly } from 'svelte/transition';
   import { MapPointType, MapType, PointPosition } from '../utils/enum';
   import axios from 'axios';
-  import { allMarkers, collectionSet, hiddenSet, ip, isAdminModeStore, isMobile, setAllMarkers } from '../stores';
+  import { allMarkers, collectionSet, hiddenSet, ip, isAdminModeStore, setAllMarkers } from '../stores';
   import type { MapPoint, Reply } from '../utils/typings';
   import { MapIcon } from './icons';
   import './icons.css';
@@ -79,7 +79,7 @@
   /** DLC Shadow of the Erdtree 地图数据源 */
   const dlcShadowOfTheErdtreeMap: string = 'https://tiles.mapgenie.io/games/elden-ring/the-shadow-lands/asdnlkkveao-v1/{z}/{x}/{y}.jpg'; //'./resource/maps/dlc1/{z}/{x}/{y}.jpg'; // './resource/maps/underground/{z}/{x}/{y}.jpg';
 
-  const change_currently_used_maptile_format_to_dlc_maptile_format = (z_for_current_maptile, x_or_y) => {
+  const change_currently_used_maptile_format_to_dlc_maptile_format = (z_for_current_maptile: number, x_or_y: number) => {
     return 2 ** (z_for_current_maptile - 1 + 8) - (2 ** z_for_current_maptile - x_or_y);
   };
 
@@ -136,7 +136,6 @@
   /** 地表显示模式 [地表, 洞穴, 灰城] */
   let current_position: [boolean, boolean, boolean] = [true, true, false];
   /** 左侧栏筛选文本（未使用 */
-  let filterString: string = '';
   /** 是否显示自己添加的地标 */
   let showSelf: boolean = false;
 
@@ -288,11 +287,11 @@
             user_token = res.data.token;
             current_username = uid;
             set_login(current_username, pw, user_token);
-            onOK(res.data.token);
+            onOK?.(res.data.token);
             break;
           case 'fail':
             register_error = $t('map.modals.login.error');
-            onFail();
+            onFail?.();
             break;
           default:
             break;
@@ -300,23 +299,24 @@
       });
   };
 
-  const set_login = (uid, p, token) => {
+  const set_login = (uid: string, p: string, token: string) => {
     setCookie('login_uid', uid);
     setCookie('login_p', p);
     setCookie('login_token', token);
     is_login = true;
   };
 
-  const has_loginned = () => {
-    return getCookie('login_token') !== '';
-  };
 
   const logout = () => {
+    if (is_login) {
+      current_username = '';
+      user_token = '';
+    }
     setCookie('login_uid', '');
     setCookie('login_p', '');
     setCookie('login_token', '');
     is_login = false;
-    axios.delete('./login.php').then(res => {});
+    axios.delete('./login.php').then(() => {});
   };
 
   const refreshCurrentShowingMapReplies = (id: number, onFinish?: (data: Reply[]) => void) => {
@@ -339,7 +339,7 @@
       //@ts-ignore
       grecaptcha.render('recaptcha-container', {
         sitekey: privateConfig.default.reCaptchaV2SiteKey,
-        callback: token => {
+        callback: (token: string) => {
           onTokenReceived(token);
         },
         expiredCallback: () => {
@@ -350,14 +350,14 @@
   };
 
   /** 删除回复 */
-  const onDeleteReply = id => {
+  const onDeleteReply = (id: number) => {
     axios
       .delete('./mapReply.php', {
         data: {
           id,
         },
       })
-      .then(res => {
+      .then(() => {
         currentShowingMapReplies = currentShowingMapReplies.filter(f => {
           return f.id !== id;
         });
@@ -365,25 +365,25 @@
   };
 
   /** 对回复好评 */
-  const onLikeReply = id => {
+  const onLikeReply = (id: number) => {
     axios
       .patch('./mapReply.php', {
         id,
         like: 0,
       })
-      .then(res => {
+      .then(() => {
         refreshCurrentShowingMapReplies(currentClickedMarker.id);
       });
   };
 
   /** 对回复恶评 */
-  const onDislikeReply = id => {
+  const onDislikeReply = (id: number) => {
     axios
       .patch('./mapReply.php', {
         id,
         dislike: 0,
       })
-      .then(res => {
+      .then(() => {
         refreshCurrentShowingMapReplies(currentClickedMarker.id);
       });
   };
@@ -616,12 +616,12 @@
     /** 上次缩放等级，用来比对是不是2级，是2级的话，就不加载地名了，不然太卡力 */
     let lastZoom = 3;
 
-    map.on('zoomstart', e => {
+    map.on('zoomstart', () => {
       lastZoom = map?.getZoom();
     });
 
     // 地图缩放/移动结束后储存状态
-    map.on('zoomend', e => {
+    map.on('zoomend', () => {
       setCookie('zoom', map?.getZoom());
       setCookie('centerlat', map?.getCenter().lat);
       setCookie('centerlng', map?.getCenter().lng);
@@ -637,7 +637,7 @@
       updateShowingMarkers();
     });
 
-    map.on('moveend', e => {
+    map.on('moveend', () => {
       setCookie('zoom', map?.getZoom());
       setCookie('centerlat', map?.getCenter().lat);
       setCookie('centerlng', map?.getCenter().lng);
@@ -684,7 +684,7 @@
   // onMount 结束=============================================================
 
   // 地图大小随窗口变化
-  window.addEventListener('resize', e => {
+  window.addEventListener('resize', () => {
     mapW = window.innerWidth;
     mapH = window.innerHeight;
   });
@@ -861,7 +861,7 @@
 
           isReplyLoading = true;
           // 加载回复列表
-          refreshCurrentShowingMapReplies(marker.id, data => {
+          refreshCurrentShowingMapReplies(marker.id, () => {
             isReplyLoading = false;
           });
 
@@ -1152,7 +1152,7 @@
         id: currentClickedMarker?.id,
         like: 0,
       })
-      .then(res => {
+      .then(() => {
         currentClickedMarker.like = Number(currentClickedMarker?.like) + 1;
         refreshAllMarkers(currentClickedMarker?.id);
       });
@@ -1165,7 +1165,7 @@
         id: currentClickedMarker?.id,
         dislike: 0,
       })
-      .then(res => {
+      .then(() => {
         currentClickedMarker.dislike = Number(currentClickedMarker?.dislike) + 1;
         refreshAllMarkers(currentClickedMarker?.id);
       });
@@ -1179,7 +1179,7 @@
           id: currentClickedMarker?.id,
         },
       })
-      .then(res => {
+      .then(() => {
         markerInfoVisibility = false;
         markers
           .filter(f => {
@@ -1196,18 +1196,19 @@
   };
 
   /** 筛选栏的checkbox更改后 */
-  const onFilterCheckChange = e => {
+  const onFilterCheckChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
     // 变一下tip
     refreshLeftBarTipIndex();
 
     // 判断更改的value，如果是functional的话，单独拎出来处理
-    switch (e.target.value) {
+    switch (target.value) {
       case 'self':
-        showSelf = e.target.checked;
+        showSelf = target.checked;
         refreshAllMarkers();
         break;
       case 'all':
-        selectAll = e.target.checked;
+        selectAll = target.checked;
         if (selectAll) {
           freshSelectAll();
         } else {
@@ -1218,15 +1219,15 @@
         setCookie('checkedTypes', checkedTypes.join('|'));
         break;
       case 'collect':
-        showCollect = e.target.checked;
+        showCollect = target.checked;
         refreshCollectedMarkers();
         break;
       case 'hide':
-        show_hidden = e.target.checked;
+        show_hidden = target.checked;
         updateShowingMarkers();
         break;
       case 'hidebad':
-        hideBad = e.target.checked;
+        hideBad = target.checked;
         if (hideBad) {
           alert($t('siteTypes.functionalFilters.hideBadTip'));
         }
@@ -1234,14 +1235,14 @@
         updateShowingMarkers();
         break;
       default:
-        if (e.target.checked) {
-          if (!checkedTypes.includes(e.target.value)) {
-            checkedTypes = [...checkedTypes, e.target.value];
+        if (target.checked) {
+          if (!checkedTypes.includes(target.value)) {
+            checkedTypes = [...checkedTypes, target.value];
           }
         } else {
-          if (checkedTypes.includes(e.target.value)) {
+          if (checkedTypes.includes(target.value)) {
             checkedTypes = checkedTypes.filter(i => {
-              return i !== e.target.value;
+              return i !== target.value;
             });
           }
         }
@@ -1258,9 +1259,10 @@
   };
 
   /** 锁定地标 */
-  const onSetLockChecked = e => {
-    axios.patch('./map.php', { id: currentClickedMarker?.id, is_lock: e.target.checked ? '1' : '0' }).then(res => {
-      currentClickedMarker.is_lock = e.target.checked;
+  const onSetLockChecked = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    axios.patch('./map.php', { id: currentClickedMarker?.id, is_lock: target.checked ? '1' : '0' }).then(() => {
+      currentClickedMarker.is_lock = target.checked;
       updateShowingMarkers(currentClickedMarker?.id);
     });
   };
@@ -2200,17 +2202,11 @@
     font-size: 1em;
   }
   input,
-  textarea,
-  select {
+  textarea {
     font-size: 1em;
   }
   textarea {
     height: 100px;
-  }
-  #showNameBtn {
-    margin: 4px;
-    font-size: 0.6em;
-    width: -webkit-fill-available;
   }
   #addPointButton {
     margin-left: 5px;
@@ -2312,8 +2308,6 @@
     font-size: 1.1em;
     padding: 5px 13px;
   }
-  .modalInner textarea {
-  }
   .modalInner p {
     color: rgb(251 241 218);
   }
@@ -2328,8 +2322,6 @@
   }
   #underSelector button {
     width: -webkit-fill-available;
-  }
-  .checkbox {
   }
   input[type='checkbox']::after {
     background-color: #f5cc95;

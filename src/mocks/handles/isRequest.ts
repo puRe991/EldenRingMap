@@ -1,7 +1,7 @@
 import { rest } from 'msw';
 
 export default [
-    rest.post('/api/isRequest.php', (req, res, ctx) => {
+    rest.post('/api/isRequest.php', (_req, res, ctx) => {
         return res(
             ctx.json({
                 ip: 'localhost',

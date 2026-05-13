@@ -22,9 +22,4 @@ import RouteViewer from "../components/RouteViewer/RouteViewer.svelte";
     width: 100%;
     text-align: center;
   }
-  .container p {
-    color: rgb(208, 200, 181);
-    min-width: fit-content;
-    margin-right: 10px;
-  }
 </style>

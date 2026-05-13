@@ -1,11 +1,13 @@
 import { MapIcon } from '../components/icons';
 import { ApothegmType, MapPointType } from './enum';
 
+type TranslateFn = (key: string) => string;
+
 /**
  * 所有筛选选项
  * @description hr: 是否是分割线，functional: 是否是功能性选项
  */
-export const getSiteTypeFilters = $t => [
+export const getSiteTypeFilters = ($t: TranslateFn) => [
   { name: $t('siteTypes.functionalFilters.myPoints'), value: 'self', functional: true },
   { name: $t('siteTypes.functionalFilters.myCollect'), value: 'collect', functional: true },
   { name: $t('siteTypes.functionalFilters.showHidden'), value: 'hide', functional: true },
@@ -78,7 +80,7 @@ export const getSiteTypeFilters = $t => [
  * 所有筛选选项
  * @description hr: 是否是分割线，functional: 是否是功能性选项
  */
-export const getApoFilters = $t => [
+export const getApoFilters = ($t: TranslateFn) => [
   { name: $t('apoTypes.functionalFilters.all'), value: 'all', color: '', show: false, functional: true },
   { name: $t('apoTypes.functionalFilters.my'), value: 'my', color: '', show: false, functional: true },
 

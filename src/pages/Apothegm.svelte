@@ -55,15 +55,10 @@
 
   /** 当前打开的讯息回复id */
   let currentClickedReplyId: number = 0;
-  /** 当前打开的讯息回复index */
-  let currentClickedReplyIndex: number = -1;
-
   /** 要发送的讯息标题 */
   let postTitle: string = '';
   /** 要发送的讯息内容 */
   let postContent: string = '';
-  /** 要发送的讯息的姿态（未使用 */
-  let postGesture: string = '';
   /** 要加的点的类型 */
   let postType: ApothegmType = ApothegmType.Empty;
 
@@ -250,7 +245,7 @@
         id: currentShowingApoId,
         like: 0,
       })
-      .then(res => {
+      .then(() => {
         refreshApo(currentShowingApoId);
       });
   };
@@ -262,7 +257,7 @@
         id: currentShowingApoId,
         dislike: 0,
       })
-      .then(res => {
+      .then(() => {
         refreshApo(currentShowingApoId);
       });
   };
@@ -274,7 +269,7 @@
         id: currentClickedReplyId,
         like: 0,
       })
-      .then(res => {
+      .then(() => {
         refreshApo(currentShowingApoId);
       });
   };
@@ -286,7 +281,7 @@
         id: currentClickedReplyId,
         dislike: 0,
       })
-      .then(res => {
+      .then(() => {
         refreshApo(currentShowingApoId);
       });
   };
@@ -299,7 +294,7 @@
           id: currentShowingApoId,
         },
       })
-      .then(res => {
+      .then(() => {
         apothegms = apothegms.filter(f => {
           return f.id !== currentShowingApoId;
         });
@@ -316,13 +311,25 @@
           id: currentClickedReplyId,
         },
       })
-      .then(res => {
+      .then(() => {
         apothegms[currentShowingApoIndex].replies = apothegms[currentShowingApoIndex].replies.filter(f => {
           return f.id !== currentClickedReplyId;
         });
         currentClickedReplyId = 0;
-        currentClickedReplyIndex = -1;
       });
+  };
+
+  const showApothegm = (apoId: number) => {
+    // 点击讯息打开
+    currentShowingApoId = apoId;
+    refreshCurrentShowingApoIndex();
+  };
+
+  const handleApothegmKeydown = (event: KeyboardEvent, apoId: number) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      showApothegm(apoId);
+    }
   };
 
   /** 添加地标的选择类型的Modal里的各个类型按钮的事件喵 */
@@ -384,11 +391,10 @@
       {#each apothegms as apo (apo.id)}
         <div
           class="apothegm"
-          on:click={() => {
-            // 点击讯息打开
-            currentShowingApoId = apo?.id;
-            refreshCurrentShowingApoIndex();
-          }}
+          role="button"
+          tabindex="0"
+          on:click={() => showApothegm(apo.id)}
+          on:keydown={event => handleApothegmKeydown(event, apo.id)}
         >
           <div class="title">
             <div class="title-reply">
@@ -502,7 +508,6 @@
                     <button
                       on:click={() => {
                         currentClickedReplyId = reply.id;
-                        currentClickedReplyIndex = index;
 
                         // 设置删除的是讯息还是回复
                         deleteReply = true;
@@ -516,14 +521,12 @@
                     <button
                       on:click={() => {
                         currentClickedReplyId = reply?.id;
-                        currentClickedReplyIndex = index;
                         onLikeReply();
                       }}>{$t('apothegm.list.like')} {reply?.like}</button
                     >
                     <button
                       on:click={() => {
                         currentClickedReplyId = reply?.id;
-                        currentClickedReplyIndex = index;
                         onDislikeReply();
                       }}>{$t('apothegm.list.dislike')} {reply?.dislike}</button
                     >
@@ -682,8 +685,6 @@
   .modalInner input {
     font-size: 1.1em;
     padding: 5px 0;
-  }
-  .modalInner textarea {
   }
   textarea {
     height: 100px;

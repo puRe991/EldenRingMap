@@ -1,21 +1,17 @@
 <script lang="ts">
-  import { afterUpdate, onMount } from 'svelte';
-  import type { Box } from './types';
+  import { onMount } from 'svelte';
   import Drawer from './drawer';
+  import type { RouteBox, RouteLayout, RouteLink } from './drawer';
   import { boxes } from './data';
   import './box.css';
   import Modal from '../Modal.svelte';
 
   // 初始化地图宽高
-  /** 地图div宽度 */
-  let winW: number = window.innerWidth;
   /** 地图div高度 */
   let winH: number = window.innerHeight;
 
-  /** 图的长宽 */
-  let range = { width: 0, height: 0 };
   /** 计算后的图 */
-  let data;
+  let routeData: RouteLayout | undefined;
 
   let showEditPanel = false;
 
@@ -26,30 +22,31 @@
 
   onMount(() => {
     // 地图大小随窗口变化
-    window.addEventListener('resize', e => {
-      winW = window.innerWidth;
+    window.addEventListener('resize', () => {
       winH = window.innerHeight;
     });
 
     // 获得计算后的图
-    data = Drawer.d3DagStratify(Drawer.getTree(boxes));
-    // 获得图的长宽
-    range = { width: data.size.width * 2, height: data.size.height * 2 };
+    routeData = Drawer.d3DagStratify(Drawer.getTree(boxes));
   });
   /** 全部Box */
-  let resultBoxes: { top: number; left: number; box: Box }[] = [];
+  let resultBoxes: RouteBox[] = [];
   /** 全部连线 */
-  let resultLinks: { from: number; to: number; points: { x: number; y: number }[] }[] = [];
+  let resultLinks: RouteLink[] = [];
 
   /** 刷新显示 */
   const refreshRoutes = () => {
+    if (!routeData) {
+      return;
+    }
+
     resultBoxes = [];
     resultLinks = [];
 
     Drawer.draw(
-      data.result,
+      routeData.result,
       boxes,
-      (box: { top: number; left: number; box: Box }, links: { from: number; to: number; points: { x: number; y: number }[] }[]) => {
+      (box: RouteBox, links: RouteLink[]) => {
         resultBoxes.push(box);
         resultBoxes = resultBoxes;
         resultLinks = [...resultLinks, ...links];
@@ -59,16 +56,17 @@
     );
   };
 
-  afterUpdate(() => {
+  $: if (routeData) {
     // 绘制
     refreshRoutes();
-  });
+  }
 
   let addBoxModalVisibility = false;
   let boxInfoModalVisibility = false;
-  let currentClickedBox;
+  let currentClickedBox: RouteBox;
+  let editTarget: { boxId: number; type: number } | undefined;
 
-  const onBoxClick = box => {
+  const onBoxClick = (box: RouteBox) => {
     currentClickedBox = box;
     showEditPanel = true;
   };
@@ -78,8 +76,16 @@
    * @param box 节点id
    * @param type 默认编辑方式（上加？编辑？下加？
    */
-  const onEdit = (box, type: number = 0) => {
+  const onEdit = (boxId: number, type: number = 0) => {
+    editTarget = { boxId, type };
     addBoxModalVisibility = true;
+  };
+
+  const handleBoxKeydown = (event: KeyboardEvent, box: RouteBox) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onBoxClick(box);
+    }
   };
 
   //alert('支线页开发中，暂不可用');
@@ -124,10 +130,13 @@
     {#each resultBoxes as box}
       <div
         class="box box-type{box.box.type}"
+        role="button"
+        tabindex="0"
         style="left: {box.left}px; top: {box.top}px; width: {boxWidth}px; height: {boxHeight}px;"
         on:click={() => {
           onBoxClick(box);
         }}
+        on:keydown={event => handleBoxKeydown(event, box)}
       >
         <p>{box.box.name}</p>
       </div>
@@ -145,21 +154,21 @@
         </button>
         <button
           on:click={() => {
-            onEdit(currentClickedBox.id, 1);
+            onEdit(currentClickedBox.box.id, 1);
           }}
         >
           Oberhalb hinzufügen
         </button>
         <button
           on:click={() => {
-            onEdit(currentClickedBox.id, 0);
+            onEdit(currentClickedBox.box.id, 0);
           }}
         >
           Ändern
         </button>
         <button
           on:click={() => {
-            onEdit(currentClickedBox.id, 2);
+            onEdit(currentClickedBox.box.id, 2);
           }}
         >
           Unterhalb hinzufügen
@@ -183,6 +192,9 @@
   }}
 >
   <div id="addBoxModal">
+    {#if editTarget}
+      <p>Aktueller Knoten: {editTarget.boxId}</p>
+    {/if}
     <div class="linkedBoxHeader">
       <p>Vorgänger</p>
       <button>+</button>
@@ -221,7 +233,10 @@
     boxInfoModalVisibility = false;
   }}
 >
-  <div id="addBoxModal">rua</div>
+  <div id="addBoxModal">
+    {#if editTarget}
+      <p>Aktueller Knoten: {editTarget.boxId}</p>
+    {/if}rua</div>
 </Modal>
 
 <style>
@@ -260,10 +275,6 @@
   svg {
     position: absolute;
     z-index: 1;
-  }
-  svg line {
-    stroke: rgb(208, 200, 181);
-    stroke-width: 2;
   }
   svg path {
     stroke: rgb(208, 200, 181);

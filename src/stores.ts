@@ -8,7 +8,7 @@ import { ConvertType } from 'zhconvertor';
 import { persist, PersistentStore } from './utils/persist';
 import { locale } from 'svelte-i18n';
 import type { SupportedLang } from './utils/enum';
-import { getCookie, setCookie } from './utils/utils';
+import { getCookie, setCookie } from './utils/cookies';
 import Config from './config';
 
 // Stores
@@ -121,7 +121,7 @@ export function transferOldStorage() {
 /** ip */
 export let ip = '';
 /** 设置ip */
-export const setIp = newip => {
+export const setIp = (newip: string) => {
   ip = newip;
 };
 

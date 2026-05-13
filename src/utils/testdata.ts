@@ -1,4 +1,4 @@
-import { MapPoint } from './typings';
+import type { MapPoint } from './typings';
 
 export const testdata: MapPoint[] = [
   {
