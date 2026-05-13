@@ -56,6 +56,169 @@
         return f.value;
       });
 
+  /** 兼容旧接口/Mock数据中的 is_underground 字段，避免类型不一致导致所有地标被本地过滤掉 */
+  const getMarkerMapType = (marker: MapPoint): MapType => Number(marker.mapType ?? (marker as MapPoint & { is_underground?: number | boolean }).is_underground ?? MapType.Default) as MapType;
+
+  /** 兼容旧接口中缺失 position 的数据，默认按地表点处理 */
+  const getMarkerPosition = (marker: MapPoint): PointPosition => Number(marker.position ?? PointPosition.Surface) as PointPosition;
+
+  type MarkerDebugSnapshot = Pick<MapPoint, 'id' | 'type' | 'name' | 'lat' | 'lng' | 'ip' | 'like' | 'dislike' | 'is_deleted'> & {
+    rawMapType?: MapType;
+    rawIsUnderground?: number | boolean;
+    normalizedMapType: MapType;
+    rawPosition?: PointPosition;
+    normalizedPosition: PointPosition;
+  };
+
+  const isMapDebugLoggingEnabled = (): boolean => !window.location.href.includes('mapDebug=0') && getCookie('mapDebug') !== '0';
+
+  const mapDebugLog = (label: string, ...args: unknown[]) => {
+    if (isMapDebugLoggingEnabled()) {
+      console.log(`[MapDebug] ${label}`, ...args);
+    }
+  };
+
+  const mapDebugWarn = (label: string, ...args: unknown[]) => {
+    if (isMapDebugLoggingEnabled()) {
+      console.warn(`[MapDebug] ${label}`, ...args);
+    }
+  };
+
+  const countMarkersByType = (items: MapPoint[]): Record<string, number> =>
+    items.reduce<Record<string, number>>((counts, marker) => {
+      counts[marker.type] = (counts[marker.type] ?? 0) + 1;
+      return counts;
+    }, {});
+
+  const getMarkerDebugSnapshot = (marker: MapPoint): MarkerDebugSnapshot => {
+    const legacyMarker = marker as MapPoint & { is_underground?: number | boolean };
+
+    return {
+      id: marker.id,
+      type: marker.type,
+      name: marker.name,
+      lat: marker.lat,
+      lng: marker.lng,
+      ip: marker.ip,
+      like: marker.like,
+      dislike: marker.dislike,
+      is_deleted: marker.is_deleted,
+      rawMapType: marker.mapType,
+      rawIsUnderground: legacyMarker.is_underground,
+      normalizedMapType: getMarkerMapType(marker),
+      rawPosition: marker.position,
+      normalizedPosition: getMarkerPosition(marker),
+    };
+  };
+
+  const getFilterDebugState = () => ({
+    checkedTypes: [...checkedTypes],
+    selectAll,
+    selectedTypes: selectAll ? getSelectableFilterValues() : [...checkedTypes],
+    mapType,
+    current_position: [...current_position],
+    showSelf,
+    ip,
+    show_hidden,
+    hiddenCount: $hiddens.size,
+    hideBad,
+    showPlaceNames,
+    markerFontSize,
+    bounds: map ? map.getBounds().toBBoxString() : 'map-not-ready',
+  });
+
+  const getMarkerFilterRejectReasons = (marker: MapPoint): string[] => {
+    const selectedTypes = selectAll ? getSelectableFilterValues() : checkedTypes;
+    const selectedPositions = current_position
+      .map((selected, index) => (selected ? index : -1))
+      .filter(index => index >= 0);
+    const reasons: string[] = [];
+
+    if (!selectedTypes.includes(marker.type)) reasons.push('type_not_selected');
+    if (getMarkerMapType(marker) !== mapType) reasons.push('map_type_mismatch');
+    if (mapType !== MapType.Underground && !selectedPositions.includes(getMarkerPosition(marker))) reasons.push('position_not_selected');
+    if (showSelf && marker.ip !== ip) reasons.push('show_self_ip_mismatch');
+    if (map && !map.getBounds().contains(L.latLng(marker.lat, marker.lng))) reasons.push('outside_viewport');
+    if (!show_hidden && $hiddens.has(marker.id)) reasons.push('hidden_locally');
+    if (hideBad && marker.like < marker.dislike && marker.type !== MapPointType.Cifu) reasons.push('hidden_by_bad_rating');
+
+    return reasons;
+  };
+
+  const logMarkerResponseDebug = (label: string, data: unknown, params: Record<string, unknown>) => {
+    if (!isMapDebugLoggingEnabled()) return;
+
+    if (!Array.isArray(data)) {
+      mapDebugWarn(`${label}: response is not an array`, { params, data });
+      return;
+    }
+
+    const responseMarkers = data as MapPoint[];
+    const shopMarkers = responseMarkers.filter(marker => marker.type === MapPointType.Shop);
+    mapDebugLog(`${label}: response summary`, {
+      params,
+      total: responseMarkers.length,
+      countsByType: countMarkersByType(responseMarkers),
+      shopCount: shopMarkers.length,
+      shopSamples: shopMarkers.slice(0, 25).map(getMarkerDebugSnapshot),
+    });
+
+    if ((selectAll || checkedTypes.includes(MapPointType.Shop)) && shopMarkers.length === 0) {
+      mapDebugWarn(`${label}: Händler/shop filter active, but response contains 0 shop markers`, { params, checkedTypes: [...checkedTypes], selectAll });
+    }
+  };
+
+  const logRenderDebug = (label: string, candidates: MapPoint[], renderedMarkers: { marker: L.Marker; id: number; ins: MapPoint }[]) => {
+    if (!isMapDebugLoggingEnabled()) return;
+
+    const reasonCounts: Record<string, number> = {};
+    const rejectedShopSamples: MarkerDebugSnapshot[] = [];
+
+    candidates.forEach(marker => {
+      const reasons = getMarkerFilterRejectReasons(marker);
+      if (reasons.length === 0) return;
+
+      reasons.forEach(reason => {
+        reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
+      });
+
+      if (marker.type === MapPointType.Shop && rejectedShopSamples.length < 25) {
+        rejectedShopSamples.push(getMarkerDebugSnapshot(marker));
+      }
+    });
+
+    const shopCandidates = candidates.filter(marker => marker.type === MapPointType.Shop);
+    const renderedShopMarkers = renderedMarkers.filter(marker => marker.ins.type === MapPointType.Shop);
+
+    mapDebugLog(`${label}: render summary`, {
+      state: getFilterDebugState(),
+      candidateTotal: candidates.length,
+      candidateCountsByType: countMarkersByType(candidates),
+      shopCandidates: shopCandidates.length,
+      shopCandidateSamples: shopCandidates.slice(0, 25).map(getMarkerDebugSnapshot),
+      renderedTotal: renderedMarkers.length,
+      renderedShopMarkers: renderedShopMarkers.length,
+      leafletMarkerCount: markers.length,
+      rejectReasonCounts: reasonCounts,
+      rejectedShopSamples,
+    });
+  };
+
+  const attachTileDebugLogging = (layer: L.Layer, name: string) => {
+    if (!isMapDebugLoggingEnabled()) return;
+
+    layer.on('loading', () => mapDebugLog(`${name}: tile layer loading`));
+    layer.on('load', () => mapDebugLog(`${name}: tile layer loaded`));
+    layer.on('tileload', (event: { tile: HTMLElement }) => {
+      const image = event.tile as HTMLImageElement;
+      mapDebugLog(`${name}: tile loaded`, { src: image?.src });
+    });
+    layer.on('tileerror', (event: { tile: HTMLElement; error?: unknown }) => {
+      const image = event.tile as HTMLImageElement;
+      mapDebugWarn(`${name}: tile error`, { src: image?.src, error: event.error });
+    });
+  };
+
   /** 判断地标是否符合当前本地筛选条件，防止过期请求或单点刷新把未勾选地标画出来 */
   const matchesCurrentFilters = (marker: MapPoint): boolean => {
     const selectedTypes = selectAll ? getSelectableFilterValues() : checkedTypes;
@@ -65,8 +228,8 @@
 
     return (
       selectedTypes.includes(marker.type) &&
-      marker.mapType === mapType &&
-      (mapType === MapType.Underground || selectedPositions.includes(Number(marker.position ?? PointPosition.Surface))) &&
+      getMarkerMapType(marker) === mapType &&
+      (mapType === MapType.Underground || selectedPositions.includes(getMarkerPosition(marker))) &&
       (!showSelf || marker.ip === ip)
     );
   };
@@ -121,8 +284,14 @@
   /** 搜索的词 */
   let searchWord: string = '';
 
+  /** 默认选中的筛选栏选项 */
+  const defaultCheckedTypes: string[] = ['cifu', 'portal', 'soulsite', 'map', 'bigboss', 'boss', 'guhui', 'text', 'warn', 'question', 'taoke'];
+
+  /** 获取默认选中的筛选栏选项副本，避免后续筛选操作修改默认值 */
+  const getDefaultCheckedTypes = (): string[] => [...defaultCheckedTypes];
+
   /** 选中的筛选栏选项 */
-  let checkedTypes: string[] = ['cifu', 'portal', 'soulsite', 'map', 'bigboss', 'boss', 'guhui', 'text', 'warn', 'question', 'taoke'];
+  let checkedTypes: string[] = getDefaultCheckedTypes();
   // let checkedTypes: string[] = [];
 
   /** 是否显示地标名字 */
@@ -468,6 +637,7 @@
   });
 
   onMount(() => {
+    mapDebugLog('mounted: debug logging active (disable with ?mapDebug=0 or cookie mapDebug=0)');
     // 初始化地图参数
     let initZoom = 3;
     let initLat = 40;
@@ -504,11 +674,20 @@
       hideBad = getCookie('hidebad') === '1';
     }
     if (hasCookie('checkedTypes')) {
-      checkedTypes = getCookie('checkedTypes')
+      const savedCheckedTypes = getCookie('checkedTypes')
         .split('|')
         .filter(f => {
           return f !== '' && f !== undefined && getSelectableFilterValues().includes(f);
         });
+
+      if (savedCheckedTypes.length > 0) {
+        checkedTypes = savedCheckedTypes;
+      } else {
+        // Alte/ungültige gespeicherte Werte (z. B. übersetzte Namen statt technischer Typen)
+        // würden sonst dazu führen, dass beim Start gar keine Marker mehr geladen werden.
+        checkedTypes = getDefaultCheckedTypes();
+        setCookie('checkedTypes', checkedTypes.join('|'));
+      }
     }
     if (getCookie('markerfontsize')) {
       markerFontSize = Number(getCookie('markerfontsize'));
@@ -536,6 +715,7 @@
       tileSize: 200,
       zoomOffset: 0,
     });
+    attachTileDebugLogging(groundLayer, 'ground');
 
     undergroundLayer = L.tileLayer(undergroundMap, {
       maxZoom: 7,
@@ -543,6 +723,7 @@
       tileSize: 200,
       zoomOffset: 0,
     });
+    attachTileDebugLogging(undergroundLayer, 'underground');
 
     // dlc1 layer
     // 由于引用的dlc地图瓦片格式是 z, 2**z-x, 2**z-y 格式的，在这里重写dlclayer的url
@@ -563,6 +744,7 @@
       tileSize: 256,
       zoomOffset: 0,
     });
+    attachTileDebugLogging(dlcShadowOfTheErdtreeMapLayer, 'dlcShadowOfTheErdtree');
 
     // dlcShadowOfTheErdtreeMapLayer = L.tileLayer(dlcShadowOfTheErdtreeMap, {
     //   maxZoom: 7,
@@ -712,12 +894,19 @@
     isMarkersLoading = true;
     if (id && id > 0) {
       // 加载指定id
+      const params = { id, queryType: 2 };
+      mapDebugLog('refreshAllMarkers(id): request', { requestId, params, state: getFilterDebugState() });
       axios
         .get('./map.php', {
-          params: { id, queryType: 2 },
+          params,
         })
         .then(res => {
-          if (requestId !== latestMarkersRequestId) return;
+          if (requestId !== latestMarkersRequestId) {
+            mapDebugLog('refreshAllMarkers(id): stale response ignored', { requestId, latestMarkersRequestId });
+            return;
+          }
+
+          logMarkerResponseDebug('refreshAllMarkers(id)', res?.data, params);
 
           const index = allMarkers.findIndex(i => {
             return i.id === id;
@@ -731,28 +920,39 @@
 
           isMarkersLoading = false;
           updateShowingMarkers(id);
+        })
+        .catch(error => {
+          mapDebugWarn('refreshAllMarkers(id): request failed', { requestId, params, error });
+          isMarkersLoading = false;
         });
     } else {
       // 加载全部
+      const params = {
+        type: selectAll ? '' : checkedTypes.length === 0 || (checkedTypes.length === 1 && checkedTypes[0] === '') ? 'none' : checkedTypes.join('|'),
+        kword: searchWord,
+        ip: showSelf ? ip : '',
+        mapType: mapType,
+        queryPosition: current_position.join('|'),
+        queryType: 2,
+        /*
+        x1: map.getBounds().getSouthWest().lat,
+        y1: map.getBounds().getSouthWest().lng,
+        x2: map.getBounds().getNorthEast().lat,
+        y2: map.getBounds().getNorthEast().lng,
+        */
+      };
+      mapDebugLog('refreshAllMarkers(all): request', { requestId, params, state: getFilterDebugState() });
       axios
         .get('./map.php', {
-          params: {
-            type: selectAll ? '' : checkedTypes.length === 0 || (checkedTypes.length === 1 && checkedTypes[0] === '') ? 'none' : checkedTypes.join('|'),
-            kword: searchWord,
-            ip: showSelf ? ip : '',
-            mapType: mapType,
-            queryPosition: current_position.join('|'),
-            queryType: 2,
-            /*
-            x1: map.getBounds().getSouthWest().lat,
-            y1: map.getBounds().getSouthWest().lng,
-            x2: map.getBounds().getNorthEast().lat,
-            y2: map.getBounds().getNorthEast().lng,
-            */
-          },
+          params,
         })
         .then(res => {
-          if (requestId !== latestMarkersRequestId) return;
+          if (requestId !== latestMarkersRequestId) {
+            mapDebugLog('refreshAllMarkers(all): stale response ignored', { requestId, latestMarkersRequestId });
+            return;
+          }
+
+          logMarkerResponseDebug('refreshAllMarkers(all)', config.default.useTestData ? testdata : res?.data, params);
 
           if (config.default.useTestData) {
             setAllMarkers(testdata);
@@ -770,10 +970,15 @@
 
               onGet?.();
             } else {
+              mapDebugWarn('refreshAllMarkers(all): invalid response', { requestId, params, data: res?.data });
               alert($t('map.alert.maperror'));
               isMarkersLoading = false;
             }
           }
+        })
+        .catch(error => {
+          mapDebugWarn('refreshAllMarkers(all): request failed', { requestId, params, error });
+          isMarkersLoading = false;
         });
     }
   };
@@ -796,7 +1001,7 @@
             collectMarkers.push(getMarker(m));
 
             // 把收藏的原始标准，和大一点的显眼标注加进去（正好是倒数两个
-            if (m.mapType === mapType) {
+            if (getMarkerMapType(m) === mapType) {
               collectMarkers[collectMarkers.length - 1].addTo(map);
               collectMarkers[collectMarkers.length - 2].addTo(map);
             }
@@ -898,6 +1103,12 @@
         markers[markerIndex].marker.remove();
       }
 
+      if (resMarker) {
+        mapDebugLog('updateShowingMarkers(id): candidate', { id, marker: getMarkerDebugSnapshot(resMarker), rejectReasons: getMarkerFilterRejectReasons(resMarker) });
+      } else {
+        mapDebugWarn('updateShowingMarkers(id): marker not found in allMarkers', { id, allMarkerCount: allMarkers.length });
+      }
+
       if (resMarker && matchesCurrentFilters(resMarker)) {
         const nextMarker = { marker: getMarker(resMarker), id: resMarker.id, ins: resMarker };
 
@@ -916,6 +1127,8 @@
           nextMarker.marker.addTo(map);
         }
       }
+
+      logRenderDebug('updateShowingMarkers(id)', resMarker ? [resMarker] : [], markers.filter(marker => marker.id === id));
 
       isMarkersRenderring = false;
     } else {
@@ -944,6 +1157,8 @@
           marker.marker.addTo(map);
         }
       });
+
+      logRenderDebug('updateShowingMarkers(all)', allMarkers, markers);
 
       isMarkersRenderring = false;
     }
@@ -1198,6 +1413,7 @@
   /** 筛选栏的checkbox更改后 */
   const onFilterCheckChange = (e: Event) => {
     const target = e.target as HTMLInputElement;
+    const previousFilterState = getFilterDebugState();
     // 变一下tip
     refreshLeftBarTipIndex();
 
@@ -1256,6 +1472,13 @@
 
         break;
     }
+
+    mapDebugLog('filter changed', {
+      value: target.value,
+      checked: target.checked,
+      previousFilterState,
+      nextFilterState: getFilterDebugState(),
+    });
   };
 
   /** 锁定地标 */
