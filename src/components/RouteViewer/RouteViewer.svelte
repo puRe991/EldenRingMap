@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { afterUpdate, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import Drawer from './drawer';
   import type { RouteBox, RouteLayout, RouteLink } from './drawer';
   import { boxes } from './data';
@@ -56,10 +56,10 @@
     );
   };
 
-  afterUpdate(() => {
+  $: if (routeData) {
     // 绘制
     refreshRoutes();
-  });
+  }
 
   let addBoxModalVisibility = false;
   let boxInfoModalVisibility = false;

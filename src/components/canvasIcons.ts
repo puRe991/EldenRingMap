@@ -2,140 +2,38 @@
  * 自定义地图图标
  * @description 导出的是生成图标数据的函数，用法：`L.divIcon(iconname(size, fontcolor)(title))`
  */
-export const MapCanvasIcon = {
-  default:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  cifu:
-    (size: number = 20, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  boss:
-    (size: number = 30, fontcolor: string = 'yellow') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  littleboss:
-    (size: number = 28, fontcolor: string = 'yellow') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  portal:
-    (size: number = 24, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  message:
-    (size: number = 20, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  warning:
-    (size: number = 15, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  question:
-    (size: number = 15, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  collect:
-    (size: number = 20, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  white:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  yellow:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  green:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  blue:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  red:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
-  purple:
-    (size: number = 10, fontcolor: string = 'white') =>
-    (title?: string, fontSize: string = '0.8em') => {
-      return {
-        iconUrl: './resource/icons/boss.png',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-      };
-    },
+type CanvasIcon = {
+  iconUrl: string;
+  iconSize: [number, number];
+  iconAnchor: [number, number];
+};
+
+type CanvasIconFactory = (size?: number, fontcolor?: string) => (title?: string, fontSize?: string) => CanvasIcon;
+
+const createCanvasIcon = (defaultSize: number): CanvasIconFactory => {
+  return (size: number = defaultSize) => {
+    return () => ({
+      iconUrl: './resource/icons/boss.png',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  };
+};
+
+export const MapCanvasIcon: Record<string, CanvasIconFactory> = {
+  default: createCanvasIcon(10),
+  cifu: createCanvasIcon(20),
+  boss: createCanvasIcon(30),
+  littleboss: createCanvasIcon(28),
+  portal: createCanvasIcon(24),
+  message: createCanvasIcon(20),
+  warning: createCanvasIcon(15),
+  question: createCanvasIcon(15),
+  collect: createCanvasIcon(20),
+  white: createCanvasIcon(10),
+  yellow: createCanvasIcon(10),
+  green: createCanvasIcon(10),
+  blue: createCanvasIcon(10),
+  red: createCanvasIcon(10),
+  purple: createCanvasIcon(10),
 };
