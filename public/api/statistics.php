@@ -12,7 +12,7 @@ $json = file_get_contents('php://input'); //获取CURL GET POST PUT DELETE 请�
 $data = json_decode($json);
 
 
-$sqllink = @mysqli_connect(HOST, USER, PASS, DBNAME) or die('数据库连接出错');
+$sqllink = @mysqli_connect(HOST, USER, PASS, DBNAME) or die('Datenbankverbindung fehlgeschlagen');
 mysqli_set_charset($sqllink, 'utf8mb4');
 
 $result = '';

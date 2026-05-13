@@ -12,36 +12,36 @@
   top="0%"
   width="85%"
   backgroundOpacity={0.9}
-  title="或许你也可以试试这些合作项目..."
+  title="Vielleicht interessieren dich auch diese Partnerprojekte ..."
   zindex={1919811}
   onOKButtonClick={() => {
     cooperationModalVisibility = false;
     onOKButtonClick();
   }}
-  okButtonText={'OK' + (isOpenningWhileSiteStart ? '(只会更新後显示一次)' : '')}
+  okButtonText={'OK' + (isOpenningWhileSiteStart ? ' (wird nach Updates nur einmal angezeigt)' : '')}
   showCloseButton
   onCloseButtonClick={() => {
     window.open('https://www.wanjiadongli.com/games/2815?tab=2&inviteCode=eldenringmap114514', '_blank');
   }}
-  closeButtonText="MOD / 修改器"
+  closeButtonText="Mods / Trainer"
 >
   <div id="modalContainer">
     <div class="item">
       <div class="title">
         <img src="./resource/images/appicon.webp" width="40px" height="40px" alt="icon" style="border-radius: 8px; margin-right: 10px;" />
 
-        <p class="titlep">法环地图 - 狭间地冒险指南</p>
+        <p class="titlep">Elden-Ring-Karte – Abenteuerführer für die Zwischenlande</p>
       </div>
 
-      <p>非常出色的iPhone/iPad端法环离线地图，标记、成就查看等..该有的功能应有尽有</p>
-      <p>已经和本站共享了部分数据，使用狭间地冒险指南也可以轻鬆看到这里的个性化标注了~</p>
+      <p>Eine sehr gute Offline-Karte für iPhone und iPad mit Markierungen, Erfolgsübersicht und vielen weiteren Funktionen.</p>
+      <p>Ein Teil der Daten wird mit dieser Website geteilt, sodass du dort ebenfalls personalisierte Markierungen sehen kannst.</p>
       <div style="display: flex; gap: 30px; width: 100%; justify-content: center;">
         <img src="./resource/images/app.png" width="100px" alt="qrcode for app" />
 
         <div style="height: auto; width: 0; border: solid 1px #9f9f9f;" />
 
         <div>
-          <p>点击跳转到App Store页面</p>
+          <p>Zur App-Store-Seite wechseln</p>
 
           <a href="https://apps.apple.com/cn/app/apple-store/id1615288664?pt=119039382&ct=elpwc&mt=8" target="_blank">
             <DownloadOnTheAppStoreIcon />
@@ -54,10 +54,10 @@
       <div class="title">
         <img src="./resource/images/dodo.png" width="40px" height="40px" alt="icon" style="border-radius: 8px; margin-right: 10px;" />
 
-        <p class="titlep">艾尔登法环超级群 - DoDo社区</p>
+        <p class="titlep">Elden-Ring-Community – DoDo</p>
       </div>
-      <p>为艾尔登法环玩家准备的交流地，不管是攻略，还是道具图鉴都可以轻松找到~</p>
-      <a href="https://imdodo.com/i?gNo=19255" target="_blank"> 点此前往~ </a>
+      <p>Ein Treffpunkt für Elden-Ring-Spieler mit Guides, Gegenstandsdatenbank und Austausch.</p>
+      <a href="https://imdodo.com/i?gNo=19255" target="_blank"> Zur Community </a>
     </div>
   </div>
 </Modal>

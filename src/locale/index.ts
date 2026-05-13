@@ -12,20 +12,21 @@ import { SupportedLang } from '../utils/enum';
 //   register(SupportedLang.zhCN, () => import('./lang/zh-CN'));
 //   init({
 //     fallbackLocale: SupportedLang.ja,
-//     initialLocale: get(lang),
+//     initialLocale: get(lang) || SupportedLang.de,
 //   });
 //   return waitLocale();
 // }
 
-import zhCN from './lang/zh-CN';
+import de from './lang/de';
 
 export async function setupI18n() {
-  addMessages(SupportedLang.zhCN, zhCN);
+  addMessages(SupportedLang.de, de);
+  register(SupportedLang.zhCN, () => import('./lang/zh-CN'));
   register(SupportedLang.zhTW, () => import('./lang/zh-TW'));
   register(SupportedLang.ja, () => import('./lang/ja'));
   init({
-    fallbackLocale: SupportedLang.zhCN,
-    initialLocale: get(lang),
+    fallbackLocale: SupportedLang.de,
+    initialLocale: get(lang) || SupportedLang.de,
   });
   return waitLocale();
 }

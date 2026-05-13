@@ -52,8 +52,8 @@ function send_verification_mail($target, $verify_code)
         $mail->setReceiver($target);
         $mail->addAttachment("");
         $mail->setMail(
-            "老头环地图 邮箱验证码",
-            '<h3>验证码是：<span>' . $verify_code . '</span></h3><p>有效期：5分钟</p>' . date('Y-m-d H:i:s')
+            "Elden-Ring-Karte E-Mail-Bestätigungscode",
+            '<h3>Der Bestätigungscode lautet: <span>' . $verify_code . '</span></h3><p>Gültig für 5 Minuten</p>' . date('Y-m-d H:i:s')
         );
         return true;
     } catch (Exception $e) {

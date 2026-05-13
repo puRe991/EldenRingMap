@@ -52,7 +52,7 @@
 </script>
 
 {#if $isLoading}
-  Loading...
+  Wird geladen...
 {:else}
   <div style="height: 100%;{$location == '/' && '-webkit-user-select: none;user-select: auto;'}">
     <!--菜单栏-->

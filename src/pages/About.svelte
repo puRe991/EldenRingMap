@@ -212,7 +212,7 @@
         <span>{$t('about.statistics.mostOrigin')}</span><span>ref.gamer.com.tw</span>
       </div>
       <div>
-        <span>{$t('about.statistics.mostRegion')}</span><span>广东省(12.58%)</span>
+        <span>{$t('about.statistics.mostRegion')}</span><span>Provinz Guangdong (12,58 %)</span>
       </div>
       <p class="hr">——————{$t('about.statistics.mostSearched')}——————</p>
       {#if statisticsData.mostSearched}
