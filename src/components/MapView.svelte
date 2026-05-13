@@ -56,6 +56,12 @@
         return f.value;
       });
 
+  /** 兼容旧接口/Mock数据中的 is_underground 字段，避免类型不一致导致所有地标被本地过滤掉 */
+  const getMarkerMapType = (marker: MapPoint): MapType => Number(marker.mapType ?? (marker as MapPoint & { is_underground?: number | boolean }).is_underground ?? MapType.Default) as MapType;
+
+  /** 兼容旧接口中缺失 position 的数据，默认按地表点处理 */
+  const getMarkerPosition = (marker: MapPoint): PointPosition => Number(marker.position ?? PointPosition.Surface) as PointPosition;
+
   /** 判断地标是否符合当前本地筛选条件，防止过期请求或单点刷新把未勾选地标画出来 */
   const matchesCurrentFilters = (marker: MapPoint): boolean => {
     const selectedTypes = selectAll ? getSelectableFilterValues() : checkedTypes;
@@ -65,8 +71,8 @@
 
     return (
       selectedTypes.includes(marker.type) &&
-      marker.mapType === mapType &&
-      (mapType === MapType.Underground || selectedPositions.includes(Number(marker.position ?? PointPosition.Surface))) &&
+      getMarkerMapType(marker) === mapType &&
+      (mapType === MapType.Underground || selectedPositions.includes(getMarkerPosition(marker))) &&
       (!showSelf || marker.ip === ip)
     );
   };
@@ -121,8 +127,14 @@
   /** 搜索的词 */
   let searchWord: string = '';
 
+  /** 默认选中的筛选栏选项 */
+  const defaultCheckedTypes: string[] = ['cifu', 'portal', 'soulsite', 'map', 'bigboss', 'boss', 'guhui', 'text', 'warn', 'question', 'taoke'];
+
+  /** 获取默认选中的筛选栏选项副本，避免后续筛选操作修改默认值 */
+  const getDefaultCheckedTypes = (): string[] => [...defaultCheckedTypes];
+
   /** 选中的筛选栏选项 */
-  let checkedTypes: string[] = ['cifu', 'portal', 'soulsite', 'map', 'bigboss', 'boss', 'guhui', 'text', 'warn', 'question', 'taoke'];
+  let checkedTypes: string[] = getDefaultCheckedTypes();
   // let checkedTypes: string[] = [];
 
   /** 是否显示地标名字 */
@@ -504,11 +516,20 @@
       hideBad = getCookie('hidebad') === '1';
     }
     if (hasCookie('checkedTypes')) {
-      checkedTypes = getCookie('checkedTypes')
+      const savedCheckedTypes = getCookie('checkedTypes')
         .split('|')
         .filter(f => {
           return f !== '' && f !== undefined && getSelectableFilterValues().includes(f);
         });
+
+      if (savedCheckedTypes.length > 0) {
+        checkedTypes = savedCheckedTypes;
+      } else {
+        // Alte/ungültige gespeicherte Werte (z. B. übersetzte Namen statt technischer Typen)
+        // würden sonst dazu führen, dass beim Start gar keine Marker mehr geladen werden.
+        checkedTypes = getDefaultCheckedTypes();
+        setCookie('checkedTypes', checkedTypes.join('|'));
+      }
     }
     if (getCookie('markerfontsize')) {
       markerFontSize = Number(getCookie('markerfontsize'));
@@ -796,7 +817,7 @@
             collectMarkers.push(getMarker(m));
 
             // 把收藏的原始标准，和大一点的显眼标注加进去（正好是倒数两个
-            if (m.mapType === mapType) {
+            if (getMarkerMapType(m) === mapType) {
               collectMarkers[collectMarkers.length - 1].addTo(map);
               collectMarkers[collectMarkers.length - 2].addTo(map);
             }

@@ -30,7 +30,7 @@ let map: MockMapPoint[] = (mapdata as LegacyMapPoint[]).map(normalizeMapPoint);
 map = map.sort((a, b) => {
     return a.id - b.id;
 })
-let next_id = map.at(map.length - 1).id;
+let next_id = map.length > 0 ? map[map.length - 1].id + 1 : 1;
 
 export default [
     rest.get('/api/map.php', (req, res, ctx) => {
@@ -39,6 +39,8 @@ export default [
         const count_para = req.url.searchParams.get('count');
         const type_para = req.url.searchParams.get('type');
         const under_para = req.url.searchParams.get('under');
+        const map_type_para = req.url.searchParams.get('mapType');
+        const query_position_para = req.url.searchParams.get('queryPosition');
         const kword_para = req.url.searchParams.get('kword');
 
         const id = Number(id_para);
@@ -47,6 +49,11 @@ export default [
         const types = type_para?.split('|');
         const kword = kword_para?.trim();
         const under = Number(under_para) == 1 ? true : false;
+        const mapType = map_type_para !== null && map_type_para !== '' && map_type_para !== 'all' ? Number(map_type_para) as MapType : undefined;
+        const selectedPositions = query_position_para
+            ?.split('|')
+            .map((selected, index) => selected === 'true' ? index : -1)
+            .filter(index => index >= 0);
 
         let selected_data: MockMapPoint[];
 
@@ -56,7 +63,11 @@ export default [
             });
         } else {
             selected_data = map.filter(e => {
-                return (!ip_para || e.ip == ip) && (!under_para || e.is_underground == under) && e.is_deleted == false
+                return (!ip_para || e.ip == ip)
+                    && (!under_para || e.is_underground == under)
+                    && (mapType === undefined || e.mapType === mapType)
+                    && (mapType === MapType.Underground || !selectedPositions || selectedPositions.includes(Number(e.position)))
+                    && e.is_deleted == false
                     && (!kword_para || e.name.match(kword) || e.desc.match(kword))
                     && (!type_para || types.includes(e.type));
             }).sort((a, b) => {
