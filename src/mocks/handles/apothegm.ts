@@ -6,7 +6,7 @@ import type { ApothegmType } from '../../utils/enum';
 /**
  * mix apothegm and apo_reply
  */
-let apothegm: Apothegm[] = apothegmData;
+let apothegm: Apothegm[] = apothegmData as Apothegm[];
 apothegm = apothegm.sort((a, b) => {
     return a.id - b.id;
 })

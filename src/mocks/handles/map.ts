@@ -1,9 +1,32 @@
 import { rest } from 'msw';
 import type { MapPoint } from '../../utils/typings';
-import type { MapPointType } from '../../utils/enum';
+import { MapPointType, MapType, PointPosition } from '../../utils/enum';
 import mapdata from '../data/map';
 
-let map: MapPoint[] = mapdata;
+type LegacyMapPoint = Omit<MapPoint, 'mapType' | 'position' | 'is_achievement' | 'delete_request' | 'x' | 'y'> &
+  Partial<Pick<MapPoint, 'mapType' | 'position' | 'is_achievement' | 'delete_request' | 'x' | 'y'>> & {
+    is_underground: boolean;
+  };
+
+type MockMapPoint = MapPoint & { is_underground: boolean };
+
+const normalizeMapPoint = (point: LegacyMapPoint): MockMapPoint => {
+  const mapType = point.mapType ?? (point.is_underground ? MapType.Underground : MapType.Default);
+
+  return {
+    ...point,
+    type: point.type as MapPointType,
+    is_achievement: point.is_achievement ?? false,
+    delete_request: point.delete_request ?? 0,
+    mapType,
+    position: point.position ?? PointPosition.Surface,
+    x: point.x ?? 'null',
+    y: point.y ?? 'null',
+    is_underground: point.is_underground ?? mapType === MapType.Underground,
+  };
+};
+
+let map: MockMapPoint[] = (mapdata as LegacyMapPoint[]).map(normalizeMapPoint);
 map = map.sort((a, b) => {
     return a.id - b.id;
 })
@@ -25,7 +48,7 @@ export default [
         const kword = kword_para?.trim();
         const under = Number(under_para) == 1 ? true : false;
 
-        let selected_data: MapPoint[];
+        let selected_data: MockMapPoint[];
 
         if (id_para && id >= 0) {
             selected_data = map.filter(e => {
@@ -50,6 +73,7 @@ export default [
     }),
     rest.post('/api/map.php', (req, res, ctx) => {
         let date = new Date().toDateString();
+        const mapType = Number(req.body['is_underground']) as MapType;
 
         map.push(({
             id: next_id++,
@@ -60,12 +84,18 @@ export default [
             lat: req.body['lat'],
             like: req.body['like'],
             dislike: req.body['dislike'],
+            delete_request: 0,
             ip: (req.body['ip'] as string)?.trim(),
-            is_underground: req.body['is_underground'] == 1,
+            is_underground: mapType === MapType.Underground,
             is_deleted: false,
             is_lock: false,
+            is_achievement: false,
+            mapType,
+            position: PointPosition.Surface,
             create_date: date,
             update_date: date,
+            x: 'null',
+            y: 'null',
         }));
         return res(
             ctx.json(true),
@@ -117,6 +147,7 @@ export default [
                 e.is_deleted = is_deleted_para ? is_deleted_para : e.is_deleted;
                 e.is_lock = is_lock_para ? is_lock_para : e.is_lock;
                 e.is_underground = is_underground_para ? is_underground_para : e.is_underground;
+                e.mapType = e.is_underground ? MapType.Underground : MapType.Default;
                 e.update_date = new Date().toDateString();
                 result = true;
                 return false;
