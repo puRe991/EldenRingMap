@@ -121,8 +121,14 @@
   /** 搜索的词 */
   let searchWord: string = '';
 
+  /** 默认选中的筛选栏选项 */
+  const defaultCheckedTypes: string[] = ['cifu', 'portal', 'soulsite', 'map', 'bigboss', 'boss', 'guhui', 'text', 'warn', 'question', 'taoke'];
+
+  /** 获取默认选中的筛选栏选项副本，避免后续筛选操作修改默认值 */
+  const getDefaultCheckedTypes = (): string[] => [...defaultCheckedTypes];
+
   /** 选中的筛选栏选项 */
-  let checkedTypes: string[] = ['cifu', 'portal', 'soulsite', 'map', 'bigboss', 'boss', 'guhui', 'text', 'warn', 'question', 'taoke'];
+  let checkedTypes: string[] = getDefaultCheckedTypes();
   // let checkedTypes: string[] = [];
 
   /** 是否显示地标名字 */
@@ -504,11 +510,20 @@
       hideBad = getCookie('hidebad') === '1';
     }
     if (hasCookie('checkedTypes')) {
-      checkedTypes = getCookie('checkedTypes')
+      const savedCheckedTypes = getCookie('checkedTypes')
         .split('|')
         .filter(f => {
           return f !== '' && f !== undefined && getSelectableFilterValues().includes(f);
         });
+
+      if (savedCheckedTypes.length > 0) {
+        checkedTypes = savedCheckedTypes;
+      } else {
+        // Alte/ungültige gespeicherte Werte (z. B. übersetzte Namen statt technischer Typen)
+        // würden sonst dazu führen, dass beim Start gar keine Marker mehr geladen werden.
+        checkedTypes = getDefaultCheckedTypes();
+        setCookie('checkedTypes', checkedTypes.join('|'));
+      }
     }
     if (getCookie('markerfontsize')) {
       markerFontSize = Number(getCookie('markerfontsize'));
