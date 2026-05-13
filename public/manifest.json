@@ -1,10 +1,10 @@
 {
-  "name": "老头环地图",
-  "short_name": "老头环地图",
+  "name": "Elden-Ring-Karte",
+  "short_name": "Elden-Ring-Karte",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#171715",
-  "description": "艾尔登法环在线标注地图。",
+  "description": "Interaktive Online-Karte für Elden Ring.",
   "scope": "./",
   "icons": [
     {

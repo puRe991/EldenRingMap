@@ -91,6 +91,7 @@ export enum SupportedLang {
   zhCN = 'zh-CN',
   zhTW = 'zh-TW',
   ja = 'ja',
+  de = 'de',
 }
 
 export enum TranslateTargetLang {

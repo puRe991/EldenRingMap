@@ -87,10 +87,10 @@
 
 <div>
   <div id="routeContainer" style="height: {winH - 60}px;">
-    <h1 style="color: white;">只是个预览，没有功能( )</h1>
-    <p style="color: white;">数据皆为边想边输入的测试数据，不保证正确性orz</p>
-    <p style="color: white;">手机端看不到内容的话请往右边划→</p>
-    <p style="color: white;">可能会有连线重叠了的情况</p>
+    <h1 style="color: white;">Nur eine Vorschau, noch ohne Funktionalität.</h1>
+    <p style="color: white;">Die Daten sind Testdaten und nicht garantiert korrekt.</p>
+    <p style="color: white;">Falls auf Mobilgeräten nichts zu sehen ist, bitte nach rechts wischen →</p>
+    <p style="color: white;">Verbindungslinien können sich überlappen.</p>
     <!--连接线-->
     <svg xmlns="http://www.w3.org/2000/svg" width="1000%" height="1000%">
       {#each resultLinks as link}
@@ -141,28 +141,28 @@
             boxInfoModalVisibility = true;
           }}
         >
-          详细
+          Details
         </button>
         <button
           on:click={() => {
             onEdit(currentClickedBox.id, 1);
           }}
         >
-          在上面添加
+          Oberhalb hinzufügen
         </button>
         <button
           on:click={() => {
             onEdit(currentClickedBox.id, 0);
           }}
         >
-          修改
+          Ändern
         </button>
         <button
           on:click={() => {
             onEdit(currentClickedBox.id, 2);
           }}
         >
-          在下面添加
+          Unterhalb hinzufügen
         </button>
       </div>
     {/if}
@@ -176,33 +176,33 @@
   top="10%"
   showOkButton
   showCloseButton
-  okButtonText="确定"
-  closeButtonText="关闭"
+  okButtonText="OK"
+  closeButtonText="Schließen"
   onCloseButtonClick={() => {
     addBoxModalVisibility = false;
   }}
 >
   <div id="addBoxModal">
     <div class="linkedBoxHeader">
-      <p>上溯节点</p>
+      <p>Vorgänger</p>
       <button>+</button>
     </div>
     <div class="linkedBoxes">
-      <div class="linkBox">接肢</div>
+      <div class="linkBox">Godrick</div>
     </div>
 
     <div class="centerBox">
-      <div class="linkBox">湖区</div>
+      <div class="linkBox">Liurnia</div>
     </div>
 
     <div class="linkedBoxHeader">
-      <p>下游节点</p>
+      <p>Nachfolger</p>
       <button>+</button>
     </div>
     <div class="linkedBoxes">
-      <div class="linkBox">红狼</div>
+      <div class="linkBox">Roter Wolf</div>
 
-      <div class="linkBox">菈妮</div>
+      <div class="linkBox">Ranni</div>
     </div>
   </div>
 </Modal>
@@ -212,11 +212,11 @@
   zindex={5}
   backgroundOpacity={0.8}
   top="10%"
-  title="详情页待制作"
+  title="Detailseite noch in Arbeit"
   showOkButton
   showCloseButton
-  okButtonText="确定"
-  closeButtonText="关闭"
+  okButtonText="OK"
+  closeButtonText="Schließen"
   onCloseButtonClick={() => {
     boxInfoModalVisibility = false;
   }}

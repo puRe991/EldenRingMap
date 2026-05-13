@@ -5,7 +5,7 @@
 </script>
 
 <div class="container">
-  <div>home</div>
+  <div>Startseite</div>
 </div>
 
 <style>

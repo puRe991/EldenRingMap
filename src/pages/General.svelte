@@ -20,9 +20,10 @@
   <div class="settingItem">
     <p>{$t('general.menulang')}</p>
     <div class="btnContainer">
-      <LangButton buttonLang={SupportedLang.zhCN} buttonText="简体" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
-      <LangButton buttonLang={SupportedLang.zhTW} buttonText="正體" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
-      <LangButton buttonLang={SupportedLang.ja} buttonText="日本語" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
+      <LangButton buttonLang={SupportedLang.de} buttonText="Deutsch" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
+      <LangButton buttonLang={SupportedLang.zhCN} buttonText="Vereinfachtes Chinesisch" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
+      <LangButton buttonLang={SupportedLang.zhTW} buttonText="Traditionelles Chinesisch" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
+      <LangButton buttonLang={SupportedLang.ja} buttonText="Japanisch" currentLang={$lang} on:click={event => lang.set(event.detail.lang)} />
     </div>
   </div>
 
@@ -31,8 +32,8 @@
   <div class="settingItem">
     <p>{$t('general.maplang')}</p>
     <div class="btnContainer">
-      <LangButton buttonLang={ConvertType.s2t} buttonText="轉為正體" currentLang={$convertTargetStore} on:click={event => convertTargetStore.set(event.detail.lang)} />
-      <LangButton buttonLang={ConvertType.t2s} buttonText="转为简体" currentLang={$convertTargetStore} on:click={event => convertTargetStore.set(event.detail.lang)} />
+      <LangButton buttonLang={ConvertType.s2t} buttonText="In traditionelles Chinesisch" currentLang={$convertTargetStore} on:click={event => convertTargetStore.set(event.detail.lang)} />
+      <LangButton buttonLang={ConvertType.t2s} buttonText="In vereinfachtes Chinesisch" currentLang={$convertTargetStore} on:click={event => convertTargetStore.set(event.detail.lang)} />
       <LangButton buttonLang={ConvertType.dont} buttonText={$t('general.dontConvert')} currentLang={$convertTargetStore} on:click={event => convertTargetStore.set(event.detail.lang)} />
     </div>
   </div>
@@ -91,8 +92,8 @@
 
   {#if config.default.inDev}
     <div class="inDev">
-      <p>以下是测试内容</p>
-      <p>如果你在使用中看到了，请不要触碰并立即报告bug</p>
+      <p>Dies sind Testinhalte.</p>
+      <p>Wenn du sie im Betrieb siehst, bitte nichts berühren und sofort einen Fehler melden.</p>
       <div>...</div>
     </div>
   {/if}
