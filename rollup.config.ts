@@ -40,6 +40,7 @@ const extensions = ['.js', '.ts', '.svelte'];
 
 export default defineConfig({
   input: 'src/main.ts',
+  preserveEntrySignatures: false,
   output: {
     sourcemap: true,
     format: 'es',

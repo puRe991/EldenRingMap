@@ -70,11 +70,68 @@
     normalizedPosition: PointPosition;
   };
 
-  const isMapDebugLoggingEnabled = (): boolean => !window.location.href.includes('mapDebug=0') && getCookie('mapDebug') !== '0';
+  type MapDebugLevel = 'off' | 'summary' | 'verbose' | 'max';
+
+  type MapDebugWindow = Window & {
+    __eldenRingMapDebug?: {
+      getState: () => ReturnType<typeof getFilterDebugState>;
+      getAllMarkers: () => MarkerDebugSnapshot[];
+      getRenderedMarkers: () => MarkerDebugSnapshot[];
+      explainMarker: (id: number) => { marker?: MarkerDebugSnapshot; reasons: string[] };
+      refreshMarkers: () => void;
+      setLevel: (level: MapDebugLevel) => void;
+    };
+  };
+
+  const normalizeMapDebugLevel = (value: string | null): MapDebugLevel | undefined => {
+    switch ((value ?? '').toLowerCase()) {
+      case '0':
+      case 'false':
+      case 'off':
+        return 'off';
+      case '2':
+      case 'verbose':
+        return 'verbose';
+      case '3':
+      case 'max':
+      case 'maximum':
+        return 'max';
+      case '1':
+      case 'true':
+      case 'summary':
+        return 'summary';
+      default:
+        return undefined;
+    }
+  };
+
+  const getMapDebugLevel = (): MapDebugLevel => {
+    const urlLevel = normalizeMapDebugLevel(new URLSearchParams(window.location.search).get('mapDebug'));
+    const cookieLevel = normalizeMapDebugLevel(getCookie('mapDebug'));
+    return urlLevel ?? cookieLevel ?? 'summary';
+  };
+
+  const isMapDebugLoggingEnabled = (minimumLevel: MapDebugLevel = 'summary'): boolean => {
+    const level = getMapDebugLevel();
+    const order: Record<MapDebugLevel, number> = { off: 0, summary: 1, verbose: 2, max: 3 };
+    return order[level] >= order[minimumLevel];
+  };
 
   const mapDebugLog = (label: string, ...args: unknown[]) => {
     if (isMapDebugLoggingEnabled()) {
       console.log(`[MapDebug] ${label}`, ...args);
+    }
+  };
+
+  const mapDebugVerbose = (label: string, ...args: unknown[]) => {
+    if (isMapDebugLoggingEnabled('verbose')) {
+      console.log(`[MapDebug:verbose] ${label}`, ...args);
+    }
+  };
+
+  const mapDebugMax = (label: string, ...args: unknown[]) => {
+    if (isMapDebugLoggingEnabled('max')) {
+      console.log(`[MapDebug:max] ${label}`, ...args);
     }
   };
 
@@ -162,6 +219,8 @@
       shopCount: shopMarkers.length,
       shopSamples: shopMarkers.slice(0, 25).map(getMarkerDebugSnapshot),
     });
+    mapDebugVerbose(`${label}: all marker snapshots`, responseMarkers.map(getMarkerDebugSnapshot));
+    mapDebugMax(`${label}: raw response`, responseMarkers);
 
     if ((selectAll || checkedTypes.includes(MapPointType.Shop)) && shopMarkers.length === 0) {
       mapDebugWarn(`${label}: Händler/shop filter active, but response contains 0 shop markers`, { params, checkedTypes: [...checkedTypes], selectAll });
@@ -202,6 +261,10 @@
       rejectReasonCounts: reasonCounts,
       rejectedShopSamples,
     });
+    mapDebugVerbose(`${label}: rejected marker details`, candidates
+      .map(marker => ({ marker: getMarkerDebugSnapshot(marker), reasons: getMarkerFilterRejectReasons(marker) }))
+      .filter(item => item.reasons.length > 0));
+    mapDebugMax(`${label}: rendered marker snapshots`, renderedMarkers.map(marker => getMarkerDebugSnapshot(marker.ins)));
   };
 
   const attachTileDebugLogging = (layer: L.Layer, name: string) => {
@@ -636,8 +699,29 @@
     getFilterBarWidth();
   });
 
+  const attachMapDebugHelpers = () => {
+    (window as MapDebugWindow).__eldenRingMapDebug = {
+      getState: getFilterDebugState,
+      getAllMarkers: () => allMarkers.map(getMarkerDebugSnapshot),
+      getRenderedMarkers: () => markers.map(marker => getMarkerDebugSnapshot(marker.ins)),
+      explainMarker: (id: number) => {
+        const marker = allMarkers.find(item => item.id === id);
+        return {
+          marker: marker ? getMarkerDebugSnapshot(marker) : undefined,
+          reasons: marker ? getMarkerFilterRejectReasons(marker) : ['marker_not_loaded'],
+        };
+      },
+      refreshMarkers: () => refreshAllMarkers(),
+      setLevel: (level: MapDebugLevel) => {
+        setCookie('mapDebug', level === 'off' ? '0' : level);
+        mapDebugLog('debug level updated', { level });
+      },
+    };
+  };
+
   onMount(() => {
-    mapDebugLog('mounted: debug logging active (disable with ?mapDebug=0 or cookie mapDebug=0)');
+    attachMapDebugHelpers();
+    mapDebugLog('mounted: debug logging active', { level: getMapDebugLevel(), disable: '?mapDebug=0 or cookie mapDebug=0', maximum: '?mapDebug=max' });
     // 初始化地图参数
     let initZoom = 3;
     let initLat = 40;
