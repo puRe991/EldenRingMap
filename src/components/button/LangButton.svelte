@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  export let currentLang;
-  export let buttonLang;
+  export let currentLang: unknown;
+  export let buttonLang: unknown;
   export let buttonText: string;
   import { t } from 'svelte-i18n';
 

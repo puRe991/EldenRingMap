@@ -11,18 +11,19 @@ import json from '@rollup/plugin-json';
 import { babel } from '@rollup/plugin-babel';
 import replace from '@rollup/plugin-replace';
 import copy from 'rollup-plugin-copy';
-import del from 'rollup-plugin-delete'
+import del from 'rollup-plugin-delete';
 
 const production = !process.env.ROLLUP_WATCH;
 
 function serve() {
-  let server;
+  let server = null;
 
   function toExit() {
     if (server) server.kill(0);
   }
 
   return {
+    name: 'serve',
     writeBundle() {
       if (server) return;
       server = require('child_process').spawn('npm', ['run', 'start', '--', '--dev'], {
@@ -35,7 +36,7 @@ function serve() {
     },
   };
 }
-const extensions = ['.js', '.ts', '.svelte']
+const extensions = ['.js', '.ts', '.svelte'];
 
 export default defineConfig({
   input: 'src/main.ts',

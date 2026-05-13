@@ -6,11 +6,12 @@
   import * as config from '../config';
   import { testdata } from '../utils/testdata';
   import { MapType } from '../utils/enum';
+  import type { MapPoint } from '../utils/typings';
 
   $: filters = getSiteTypeFilters($t);
 
   interface CollectContainer {
-    collect;
+    collect: MapPoint;
     isLocal: boolean;
     type: string;
   }
@@ -18,12 +19,12 @@
   /** 所有收藏的地标的id */
   let F_collectionsSet = collectionSet.getStore();
   let collections = Array.from($F_collectionsSet);
-  let markers = [];
+  let markers: MapPoint[] = [];
 
   /** 收藏的所有地标 */
   let collectMarkersData: CollectContainer[] = [];
 
-  const getAllMarkers = async () => {
+  const getAllMarkers = async (): Promise<MapPoint[]> => {
     return await axios
       .get('./map.php', {
         params: {
@@ -45,9 +46,10 @@
           return testdata;
         } else {
           if (res?.data && Array.isArray(res?.data)) {
-            return res?.data;
+            return res.data as MapPoint[];
           } else {
             alert($t('map.alert.maperror'));
+            return [];
           }
         }
       });
@@ -63,7 +65,7 @@
           const type = filters.filter(f => {
             return f.value === m.type;
           })[0];
-          collectMarkersData.push({ collect: m, isLocal: true, type: (type.emoji ?? '') + type.name });
+          collectMarkersData.push({ collect: m, isLocal: true, type: type ? (type.emoji ?? '') + type.name : m.type });
         }
 
         /*
@@ -111,15 +113,10 @@
     }
   };
 
-  const handleRowClick = row => {};
-
-  const handleDelete = i => {
-    console.log(collections[i]);
+  const handleDelete = (i: number) => {
     collectMarker(collections[i]);
     init();
   };
-
-  const handleLocate = row => {};
 
   const getMapTypeTitleByMapType = (mapType: MapType) => {
     switch (mapType) {
@@ -153,7 +150,7 @@
       {#each collectMarkersData as collectMarkerData, index}
         <tr>
           <td class="type-col">{collectMarkerData.type}</td>
-          <td><button class="table-link" on:click={() => handleRowClick(collectMarkerData)}>{collectMarkerData.collect.name}</button></td>
+          <td>{collectMarkerData.collect.name}</td>
           <td>{getMapTypeTitleByMapType(collectMarkerData.collect.mapType)}</td>
           <!-- <td class="savePlace-col">{collectMarkerData.isLocal ? '💻' + $t('collect.table.local') : '☁' + $t('collect.table.server')}</td> -->
           <td>
@@ -193,20 +190,6 @@
     text-align: center;
   }
 
-  .table-link {
-    background: transparent;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-    font: inherit;
-    padding: 0;
-    text-align: left;
-  }
-
-  .table-link:hover,
-  .table-link:focus-visible {
-    text-decoration: underline;
-  }
 
   tr:hover {
     background-color: #f0f0f0;

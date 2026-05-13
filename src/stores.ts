@@ -121,7 +121,7 @@ export function transferOldStorage() {
 /** ip */
 export let ip = '';
 /** 设置ip */
-export const setIp = newip => {
+export const setIp = (newip: string) => {
   ip = newip;
 };
 

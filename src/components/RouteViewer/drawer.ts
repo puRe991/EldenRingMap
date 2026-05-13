@@ -1,5 +1,20 @@
-import type { Box } from './types';
-import { dagStratify, sugiyama, DagNode, zherebko, grid } from 'd3-dag';
+import type { Box, Point } from './types';
+import { dagStratify, sugiyama, DagNode } from 'd3-dag';
+
+export type RouteTreeNode = {
+  data: { id: string };
+  dataChildren?: { child: RouteTreeNode; points: Point[] }[];
+  x: number;
+  y: number;
+};
+
+export type RouteLayout = {
+  result: RouteTreeNode;
+  size: { width: number; height: number };
+};
+
+export type RouteLink = { from: number; to: number; points: Point[] };
+export type RouteBox = { top: number; left: number; box: Box };
 
 export default class Drawer {
   /**
@@ -23,13 +38,13 @@ export default class Drawer {
    * @param data
    * @returns 返回结果和结果的长宽
    */
-  public static d3DagStratify = (data): { result; size: { width: number; height: number } } => {
+  public static d3DagStratify = (data: { id: string; parentIds: string[] }[]): RouteLayout => {
     const stratify = dagStratify();
     const dag: DagNode = stratify(data) as DagNode;
     const layout = sugiyama();
     const sugiyamainfo = layout(dag);
 
-    return { result: dag, size: sugiyamainfo };
+    return { result: dag as unknown as RouteTreeNode, size: sugiyamainfo };
   };
 
   /**
@@ -50,9 +65,9 @@ export default class Drawer {
    * }
    */
   public static draw = (
-    node,
+    node: RouteTreeNode,
     boxes: Box[],
-    onUpdate: (box: { top: number; left: number; box: Box }, links: { from: number; to: number; points: { x: number; y: number }[] }[]) => void,
+    onUpdate: (box: RouteBox, links: RouteLink[]) => void,
     scaleX: number = 50,
     scaleY: number = 50
   ) => {
@@ -61,7 +76,7 @@ export default class Drawer {
       return f.id === Number(node.data.id);
     })?.[0];
 
-    const links: { from: number; to: number; points: { x: number; y: number }[] }[] = [];
+    const links: RouteLink[] = [];
 
     // 画子节点的线
     /*
@@ -72,7 +87,7 @@ export default class Drawer {
       reserved: boolean
     }
      */
-    node?.dataChildren.forEach(child => {
+    node.dataChildren?.forEach(child => {
       links.push({
         from: instance.id,
         to: Number(child?.child?.data.id),
