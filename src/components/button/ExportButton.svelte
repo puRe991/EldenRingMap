@@ -14,7 +14,7 @@
 <button
   on:click={() => {
     try {
-      var blob = new Blob(
+      const blob = new window.Blob(
         [
           JSON.stringify({
             hiddens: serializer.write(hiddenSet.getStore().getPoints()),
