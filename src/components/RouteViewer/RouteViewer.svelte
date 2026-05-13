@@ -82,6 +82,13 @@
     addBoxModalVisibility = true;
   };
 
+  const handleBoxKeydown = (event: KeyboardEvent, box) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onBoxClick(box);
+    }
+  };
+
   //alert('支线页开发中，暂不可用');
 </script>
 
@@ -124,10 +131,13 @@
     {#each resultBoxes as box}
       <div
         class="box box-type{box.box.type}"
+        role="button"
+        tabindex="0"
         style="left: {box.left}px; top: {box.top}px; width: {boxWidth}px; height: {boxHeight}px;"
         on:click={() => {
           onBoxClick(box);
         }}
+        on:keydown={event => handleBoxKeydown(event, box)}
       >
         <p>{box.box.name}</p>
       </div>
@@ -260,10 +270,6 @@
   svg {
     position: absolute;
     z-index: 1;
-  }
-  svg line {
-    stroke: rgb(208, 200, 181);
-    stroke-width: 2;
   }
   svg path {
     stroke: rgb(208, 200, 181);

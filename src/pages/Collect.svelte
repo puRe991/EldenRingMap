@@ -153,7 +153,7 @@
       {#each collectMarkersData as collectMarkerData, index}
         <tr>
           <td class="type-col">{collectMarkerData.type}</td>
-          <td on:click={() => handleRowClick(collectMarkerData)}>{collectMarkerData.collect.name}</td>
+          <td><button class="table-link" on:click={() => handleRowClick(collectMarkerData)}>{collectMarkerData.collect.name}</button></td>
           <td>{getMapTypeTitleByMapType(collectMarkerData.collect.mapType)}</td>
           <!-- <td class="savePlace-col">{collectMarkerData.isLocal ? '💻' + $t('collect.table.local') : '☁' + $t('collect.table.server')}</td> -->
           <td>
@@ -174,12 +174,6 @@
     width: 100%;
     text-align: center;
   }
-  .container p {
-    color: rgb(208, 200, 181);
-    min-width: fit-content;
-    margin-right: 10px;
-  }
-
   table {
     width: 100%;
     border-collapse: collapse;
@@ -199,9 +193,19 @@
     text-align: center;
   }
 
-  th.savePlace-col,
-  td.savePlace-col {
-    width: 80px; /* 控制 savePlace 列的宽度 */
+  .table-link {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+  }
+
+  .table-link:hover,
+  .table-link:focus-visible {
+    text-decoration: underline;
   }
 
   tr:hover {

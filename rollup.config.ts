@@ -73,6 +73,7 @@ export default defineConfig({
       dedupe: ['svelte'],
     }),
     replace({
+      preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
     }),
     commonjs(),

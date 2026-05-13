@@ -2200,17 +2200,11 @@
     font-size: 1em;
   }
   input,
-  textarea,
-  select {
+  textarea {
     font-size: 1em;
   }
   textarea {
     height: 100px;
-  }
-  #showNameBtn {
-    margin: 4px;
-    font-size: 0.6em;
-    width: -webkit-fill-available;
   }
   #addPointButton {
     margin-left: 5px;
@@ -2312,8 +2306,6 @@
     font-size: 1.1em;
     padding: 5px 13px;
   }
-  .modalInner textarea {
-  }
   .modalInner p {
     color: rgb(251 241 218);
   }
@@ -2328,8 +2320,6 @@
   }
   #underSelector button {
     width: -webkit-fill-available;
-  }
-  .checkbox {
   }
   input[type='checkbox']::after {
     background-color: #f5cc95;

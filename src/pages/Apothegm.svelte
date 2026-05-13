@@ -325,6 +325,19 @@
       });
   };
 
+  const showApothegm = (apoId: number) => {
+    // 点击讯息打开
+    currentShowingApoId = apoId;
+    refreshCurrentShowingApoIndex();
+  };
+
+  const handleApothegmKeydown = (event: KeyboardEvent, apoId: number) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      showApothegm(apoId);
+    }
+  };
+
   /** 添加地标的选择类型的Modal里的各个类型按钮的事件喵 */
   const onFilterModalClick = (value: string) => {
     postType = value as ApothegmType;
@@ -384,11 +397,10 @@
       {#each apothegms as apo (apo.id)}
         <div
           class="apothegm"
-          on:click={() => {
-            // 点击讯息打开
-            currentShowingApoId = apo?.id;
-            refreshCurrentShowingApoIndex();
-          }}
+          role="button"
+          tabindex="0"
+          on:click={() => showApothegm(apo.id)}
+          on:keydown={event => handleApothegmKeydown(event, apo.id)}
         >
           <div class="title">
             <div class="title-reply">
@@ -682,8 +694,6 @@
   .modalInner input {
     font-size: 1.1em;
     padding: 5px 0;
-  }
-  .modalInner textarea {
   }
   textarea {
     height: 100px;
