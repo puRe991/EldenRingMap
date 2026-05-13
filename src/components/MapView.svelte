@@ -43,6 +43,34 @@
 
   $: filters = getSiteTypeFilters($t);
 
+  /** 检查指定cookie是否真的存在，避免空字符串覆盖默认筛选项 */
+  const hasCookie = (name: string): boolean => document.cookie.split(';').some(cookie => cookie.trim().startsWith(`${name}=`));
+
+  /** 当前可选的普通地标类型 */
+  const getSelectableFilterValues = (): string[] =>
+    filters
+      .filter(f => {
+        return f.functional === undefined && f.hr === undefined && f.value !== undefined;
+      })
+      .map(f => {
+        return f.value;
+      });
+
+  /** 判断地标是否符合当前本地筛选条件，防止过期请求或单点刷新把未勾选地标画出来 */
+  const matchesCurrentFilters = (marker: MapPoint): boolean => {
+    const selectedTypes = selectAll ? getSelectableFilterValues() : checkedTypes;
+    const selectedPositions = current_position
+      .map((selected, index) => (selected ? index : -1))
+      .filter(index => index >= 0);
+
+    return (
+      selectedTypes.includes(marker.type) &&
+      marker.mapType === mapType &&
+      (mapType === MapType.Underground || selectedPositions.includes(Number(marker.position ?? PointPosition.Surface))) &&
+      (!showSelf || marker.ip === ip)
+    );
+  };
+
   // 地图数据
   /** 地表地图数据源 */
   const groundMap: string = 'https://imgs.ali213.net/picfile/eldenring/{z}/{x}/{y}.jpg';
@@ -191,6 +219,7 @@
 
   let isMarkersLoading: boolean = false;
   let isMarkersRenderring: boolean = false;
+  let latestMarkersRequestId: number = 0;
 
   /** 注册Modal */
   let registerVisability: boolean = false;
@@ -391,22 +420,13 @@
 
   /** 全选所有筛选选项 */
   const freshSelectAll = () => {
-    checkedTypes = [];
-    checkedTypes = filters
-      .filter(f => {
-        return f.functional === undefined && f.hr === undefined;
-      })
-      .map(f => {
-        return f.value;
-      });
+    checkedTypes = getSelectableFilterValues();
   };
 
   /** 根据选中情况更新全选状态 */
   const freshSelectAllStatus = () => {
     if (
-      filters.filter(f => {
-        return f.functional === undefined && f.hr === undefined;
-      })?.length === checkedTypes.length
+      getSelectableFilterValues().length === checkedTypes.length
     ) {
       selectAll = true;
     } else {
@@ -483,11 +503,11 @@
     if (getCookie('hidebad')) {
       hideBad = getCookie('hidebad') === '1';
     }
-    if (getCookie('checkedTypes') !== undefined) {
+    if (hasCookie('checkedTypes')) {
       checkedTypes = getCookie('checkedTypes')
         .split('|')
         .filter(f => {
-          return f !== '' && f !== undefined;
+          return f !== '' && f !== undefined && getSelectableFilterValues().includes(f);
         });
     }
     if (getCookie('markerfontsize')) {
@@ -688,6 +708,7 @@
 
   /** 从服务端更新markers, 只在启动时全部读取一次，之后只通过id更新单个 */
   const refreshAllMarkers = (id?: number, onGet?: () => void) => {
+    const requestId = ++latestMarkersRequestId;
     isMarkersLoading = true;
     if (id && id > 0) {
       // 加载指定id
@@ -696,6 +717,8 @@
           params: { id, queryType: 2 },
         })
         .then(res => {
+          if (requestId !== latestMarkersRequestId) return;
+
           const index = allMarkers.findIndex(i => {
             return i.id === id;
           });
@@ -729,6 +752,8 @@
           },
         })
         .then(res => {
+          if (requestId !== latestMarkersRequestId) return;
+
           if (config.default.useTestData) {
             setAllMarkers(testdata);
 
@@ -816,20 +841,17 @@
     const typeInfo = filters.filter(filter => {
       return filter?.value === marker.type;
     })?.[0];
+    const iconFactory = (typeInfo?.icon ?? MapIcon.default()) as (
+      title?: string,
+      fontSize?: string,
+    ) => {
+      html: string;
+      className: string;
+      iconSize: L.Point;
+      iconArchor: L.Point;
+    };
     return L.marker(L.latLng(marker.lat, marker.lng), {
-      icon: L.divIcon(
-        (
-          typeInfo?.icon as (
-            title?: string,
-            fontSize?: string,
-          ) => {
-            html: string;
-            className: string;
-            iconSize: L.Point;
-            iconArchor: L.Point;
-          }
-        )?.((typeInfo.emoji === undefined ? '' : typeInfo.emoji) + (showPlaceNames ? getConvertedText(marker.name) : ''), `${markerFontSize}em`),
-      ),
+      icon: L.divIcon(iconFactory((typeInfo?.emoji ?? '') + (showPlaceNames ? getConvertedText(marker.name) : ''), `${markerFontSize}em`)),
     })
       .on('click', () => {
         // 在添加的时候不能误点了(取消了， 因为被太多人反应是个bug乌乌明明不是)
@@ -869,27 +891,30 @@
         return f.id === id;
       })?.[0];
       // 从地图上去掉旧的同id坐标
-      markers
-        .filter(f => {
-          return f.id === id;
-        })?.[0]
-        .marker.remove();
+      const markerIndex = markers.findIndex(f => {
+        return f.id === id;
+      });
+      if (markerIndex > -1) {
+        markers[markerIndex].marker.remove();
+      }
 
-      // 更新同id坐标
-      markers[
-        markers.findIndex(f => {
-          return f.id === id;
-        })
-      ].marker = getMarker(resMarker);
+      if (resMarker && matchesCurrentFilters(resMarker)) {
+        const nextMarker = { marker: getMarker(resMarker), id: resMarker.id, ins: resMarker };
 
-      // 如果没隐藏的
-      if (show_hidden || !(show_hidden || $hiddens.has(resMarker.id))) {
-        // 把新的坐标加到地图上
-        markers
-          .filter(f => {
-            return f.id === id;
-          })[0]
-          .marker.addTo(map);
+        if (markerIndex > -1) {
+          markers[markerIndex] = nextMarker;
+        } else {
+          markers.push(nextMarker);
+        }
+
+        // 如果没隐藏的
+        if (
+          (show_hidden || !(show_hidden || $hiddens.has(resMarker.id))) &&
+          ((hideBad && resMarker.like >= resMarker.dislike) || resMarker.type === MapPointType.Cifu || !hideBad)
+        ) {
+          // 把新的坐标加到地图上
+          nextMarker.marker.addTo(map);
+        }
       }
 
       isMarkersRenderring = false;
@@ -900,7 +925,7 @@
       });
       markers = [];
       allMarkers.forEach((m: MapPoint) => {
-        if ((map as L.Map).getBounds().contains(L.latLng(m.lat, m.lng))) {
+        if (matchesCurrentFilters(m) && (map as L.Map).getBounds().contains(L.latLng(m.lat, m.lng))) {
           markers.push({
             marker: getMarker(m),
             id: m.id,
@@ -1211,7 +1236,7 @@
       default:
         if (e.target.checked) {
           if (!checkedTypes.includes(e.target.value)) {
-            checkedTypes.push(e.target.value);
+            checkedTypes = [...checkedTypes, e.target.value];
           }
         } else {
           if (checkedTypes.includes(e.target.value)) {
